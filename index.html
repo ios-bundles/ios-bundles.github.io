@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Пакеты сотовой связи Apple</title>
+<meta name="description" content="Интерактивный подбор пакетов сотовой связи (carrier bundles) iOS по требованиям: VoLTE, VoWiFi, EVS, 5G, MMS, FaceTime.">
+<script>
+/* выбрать тему и язык до отрисовки, чтобы не мигало */
+(function(){try{var t=localStorage.getItem('acb:theme');var l=localStorage.getItem('acb:lang');
+if(t==='dark'||t==='light')document.documentElement.dataset.theme=t;
+if(l==='en'||l==='ru')document.documentElement.lang=l;}catch(e){}})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#eceff3; --surface:#ffffff; --surface-2:#f6f8fa; --ink:#0f1720; --muted:#5a6573; --faint:#8a94a1; --line:#dfe3e9;
+  --accent:#0b7a86; --accent-ink:#ffffff; --accent-soft:#dff1f2;
+  --req-bg:#fde3e0; --req-fg:#a3180f; --req-line:#f0b3ac;
+  --pref-bg:#fff1cc; --pref-fg:#7a5000; --pref-line:#ecd28a;
+  --ok-bg:#dff3e6; --ok-fg:#17693a; --ok-line:#a8dcbb;
+  --shadow:0 1px 2px rgba(15,23,32,.05),0 6px 24px -12px rgba(15,23,32,.18);
+  --sans:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d1116; --surface:#151a21; --surface-2:#1b212a; --ink:#e6ebf1; --muted:#9aa5b3; --faint:#6d7886; --line:#262e39;
+  --accent:#43c3cf; --accent-ink:#06191b; --accent-soft:#12343a;
+  --req-bg:#46201d; --req-fg:#ffb3aa; --req-line:#6d302a;
+  --pref-bg:#3d321a; --pref-fg:#f5d27f; --pref-line:#62502a;
+  --ok-bg:#15382a; --ok-fg:#8fdcab; --ok-line:#245a41;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 28px -14px rgba(0,0,0,.6);}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.mono,code{font-family:var(--mono);font-size:.88em}
+button{font:inherit;color:inherit}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+a{color:var(--accent)}
+
+/* header */
+.top{padding-inline:clamp(16px,3vw,36px);padding-block:calc(22px + env(safe-area-inset-top,0px)) 22px;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-in{max-width:1880px;margin:0 auto;display:grid;gap:14px}
+.top-row{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{display:flex;gap:14px;align-items:center}
+.glyph{flex:none;width:44px;height:44px;border-radius:12px;background:var(--accent);display:grid;place-items:center}
+.glyph svg{width:26px;height:26px}
+h1{margin:0;font-size:clamp(24px,3vw,34px);font-weight:800;letter-spacing:-.02em;line-height:1.1;text-wrap:balance}
+.sub{margin:0;color:var(--muted);max-width:92ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.meta span{font-size:12.5px;border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:3px 10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.meta b{color:var(--ink);font-weight:600}
+.prefs{display:flex;gap:8px;align-items:center}
+.toggle{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface-2)}
+.toggle button{border:0;background:transparent;padding:6px 11px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.toggle button+button{border-left:1px solid var(--line)}
+.toggle button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:inset 0 -2px 0 var(--accent)}
+.toggle svg{width:15px;height:15px}
+
+/* layout */
+.main{padding-inline:clamp(16px,3vw,36px);padding-block:22px calc(48px + env(safe-area-inset-bottom,0px))}
+.main-in{max-width:1880px;margin:0 auto;display:grid;gap:20px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1180px){.main-in{grid-template-columns:380px minmax(0,1fr);align-items:start}
+  .side{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;scrollbar-width:thin}}
+
+/* requirements panel */
+.side{display:grid;gap:12px;align-content:start}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+h2{margin:0;font-size:16px;font-weight:700;letter-spacing:-.01em}
+.tally{display:flex;gap:6px;flex-wrap:wrap}
+.tally span{font-size:12px;border-radius:999px;padding:2px 9px;font-weight:600;font-variant-numeric:tabular-nums}
+.t-req{background:var(--req-bg);color:var(--req-fg)} .t-pref{background:var(--pref-bg);color:var(--pref-fg)} .t-off{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);padding:6px 12px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.toast{font-size:12.5px;color:var(--ok-fg);min-height:1em}
+details.group{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+details.group>summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+details.group>summary::-webkit-details-marker{display:none}
+details.group>summary .dots{display:flex;gap:4px}
+details.group>summary .dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+details.group>summary .dots i.req{background:var(--req-fg)} details.group>summary .dots i.pref{background:var(--pref-fg)}
+details.group>summary .chev{transition:transform .15s}
+details.group[open]>summary .chev{transform:rotate(90deg)}
+.rules{border-top:1px solid var(--line)}
+.rule{padding:10px 14px;display:grid;gap:7px;border-top:1px solid var(--line)}
+.rule:first-child{border-top:0}
+.rule-top{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.rule .lbl{font-size:13.5px;font-weight:500}
+.rule .lbl small{display:block;color:var(--muted);font-size:12px;font-weight:400;line-height:1.35;margin-top:1px}
+.rule.off .lbl{color:var(--muted);font-weight:400}
+.rule.off .params{display:none}
+.mode{flex:none;display:inline-grid;grid-template-columns:repeat(3,auto);border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface-2)}
+.mode button{border:0;background:transparent;color:var(--muted);padding:4px 8px;cursor:pointer;font-size:11.5px;white-space:nowrap}
+.mode button+button{border-left:1px solid var(--line)}
+.mode button:hover{color:var(--ink)}
+.mode button[aria-pressed=true][data-m=off]{background:var(--surface);color:var(--ink);font-weight:600}
+.mode button[aria-pressed=true][data-m=pref]{background:var(--pref-bg);color:var(--pref-fg);font-weight:700}
+.mode button[aria-pressed=true][data-m=req]{background:var(--req-bg);color:var(--req-fg);font-weight:700}
+.params{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:12.5px;color:var(--muted)}
+.params input[type=text],.params select{font:inherit;font-size:12.5px;padding:4px 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface-2);color:var(--ink)}
+.params input[type=text]{width:130px}
+.pill-check{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:999px;padding:2px 9px 2px 6px;cursor:pointer;background:var(--surface-2)}
+.pill-check:has(input:checked){border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.pill-check input{accent-color:var(--accent);margin:0}
+
+/* results */
+.results{display:grid;gap:14px;min-width:0}
+.summary{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px 18px;display:grid;gap:10px}
+.sum-line{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.big{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;color:var(--accent)}
+.sum-line .of{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--ok-line);background:var(--ok-bg);color:var(--ok-fg);border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:600;cursor:pointer}
+.chip.warn{border-color:var(--pref-line);background:var(--pref-bg);color:var(--pref-fg)}
+.chip small{font-weight:500;opacity:.8}
+.empty{color:var(--muted)}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.search{position:relative;flex:1 1 220px;max-width:340px}
+.search input{width:100%;font:inherit;padding:8px 12px 8px 34px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--faint)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:7px 12px;cursor:pointer;font-size:13px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.chk{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer}
+.chk input{accent-color:var(--accent)}
+.count{margin-left:auto;color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.tbl{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:var(--shadow);max-height:calc(100vh - 120px)}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:12.5px}
+th,td{padding:7px 10px;text-align:left;vertical-align:top;white-space:nowrap;border-bottom:1px solid var(--line)}
+thead th{position:sticky;top:0;z-index:2;background:var(--surface-2);font-weight:600;font-size:12px;border-bottom:1px solid var(--line)}
+thead th .m{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:4px;padding:0 5px}
+thead th .m.req{background:var(--req-bg);color:var(--req-fg)} thead th .m.pref{background:var(--pref-bg);color:var(--pref-fg)} thead th .m.off{color:var(--faint)}
+thead th span.l{display:block;max-width:170px;white-space:normal;line-height:1.3}
+td.name,th.name{position:sticky;left:0;z-index:1;background:var(--surface)}
+thead th.name{z-index:3;background:var(--surface-2)}
+td.name{font-weight:600;box-shadow:1px 0 0 var(--line)}
+td.name .sims{display:block;font-family:var(--mono);font-weight:400;font-size:11px;color:var(--faint)}
+tbody tr:hover td.name{background:var(--surface-2)}
+td.bad{background:var(--req-bg);color:var(--req-fg)}
+td.warn{background:var(--pref-bg);color:var(--pref-fg)}
+td.ok{background:var(--ok-bg);color:var(--ok-fg)}
+td.na{color:var(--faint)}
+.score{display:inline-flex;gap:4px}
+.score i{font-style:normal;font-weight:700;font-size:11.5px;border-radius:6px;padding:1px 7px;font-variant-numeric:tabular-nums}
+.score .r{background:var(--req-bg);color:var(--req-fg)} .score .p{background:var(--pref-bg);color:var(--pref-fg)} .score .g{background:var(--ok-bg);color:var(--ok-fg)}
+td.why{white-space:normal;min-width:230px;max-width:380px;color:var(--muted)}
+td.why b{color:var(--req-fg);font-weight:600}
+td.why em{color:var(--pref-fg);font-style:normal}
+tr.pass td.name{box-shadow:inset 3px 0 0 var(--ok-fg),1px 0 0 var(--line)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+.notes{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 18px;display:grid;gap:8px;color:var(--muted);font-size:13px}
+.notes h2{color:var(--ink);font-size:14px}
+.notes p{margin:0;max-width:110ch}
+.err{background:var(--req-bg);color:var(--req-fg);border:1px solid var(--req-line);border-radius:12px;padding:14px 16px}
+footer{color:var(--faint);font-size:12px;text-align:center;padding-block:10px 0}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media (max-width:560px){.count{margin-left:0;width:100%}.big{font-size:32px}}
+</style>
+</head>
+<body>
+<header class="top">
+<div class="top-in">
+  <div class="top-row">
+    <div class="brand">
+      <div class="glyph" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round"><path d="M5 19V15"/><path d="M10 19V11"/><path d="M15 19V7"/><path d="M20 19V3"/></svg></div>
+      <h1 data-i18n="title">Пакеты сотовой связи Apple</h1>
+    </div>
+    <div class="prefs">
+      <div class="toggle" role="group" id="lang-t" aria-label="Язык / Language">
+        <button type="button" data-lang="ru" aria-pressed="true">RU</button><button type="button" data-lang="en" aria-pressed="false">EN</button>
+      </div>
+      <div class="toggle" role="group" id="theme-t" data-i18n-aria="theme">
+        <button type="button" data-theme-set="light" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span data-i18n="light">Светлая</span></button><button type="button" data-theme-set="dark" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span data-i18n="dark">Тёмная</span></button>
+      </div>
+    </div>
+  </div>
+  <p class="sub" data-i18n="sub"></p>
+  <div class="meta" id="meta"></div>
+</div>
+</header>
+
+<main class="main">
+<div class="main-in">
+  <aside class="side" aria-labelledby="req-h">
+    <div class="panel-head">
+      <h2 id="req-h" data-i18n="reqs">Требования</h2>
+      <div class="tally" id="tally"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="reset" type="button" data-i18n="reset">Сбросить к умолчаниям</button>
+      <button class="btn" id="export" type="button" data-i18n="export">Скопировать настройки</button>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div id="groups" style="display:grid;gap:10px"></div>
+  </aside>
+
+  <section class="results" data-i18n-aria="results">
+    <div class="summary" id="summary"></div>
+    <div class="toolbar">
+      <label class="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input type="search" id="q" data-i18n-ph="search"></label>
+      <div class="seg" role="group" id="seg" data-i18n-aria="seg">
+        <button type="button" data-lim="0" aria-pressed="true" data-i18n="fit">Подходят</button><button type="button" data-lim="1" aria-pressed="false" data-i18n="lim1">+ с 1 несоответствием</button><button type="button" data-lim="2" aria-pressed="false" data-i18n="lim2">+ с 2</button><button type="button" data-lim="99" aria-pressed="false" data-i18n="all">Все</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="showoff"> <span data-i18n="showoff">показать все свойства</span></label>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--req-bg);outline:1px solid var(--req-fg)"></i><span data-i18n="lg_req"></span></span>
+      <span><i class="sw" style="background:var(--pref-bg);outline:1px solid var(--pref-fg)"></i><span data-i18n="lg_pref"></span></span>
+      <span><i class="sw" style="background:var(--ok-bg);outline:1px solid var(--ok-fg)"></i><span data-i18n="lg_ok"></span></span>
+    </div>
+    <div class="tbl"><table><thead id="thead"></thead><tbody id="tb"><tr><td style="color:var(--muted)">…</td></tr></tbody></table></div>
+
+    <div class="notes">
+      <h2 data-i18n="how">Как читать</h2>
+      <p data-i18n-html="n1"></p>
+      <p data-i18n-html="n2"></p>
+      <p data-i18n-html="n3"></p>
+      <p data-i18n-html="n4"></p>
+      <p data-i18n-html="n5"></p>
+    </div>
+  </section>
+</div>
+<footer id="foot"></footer>
+</main>
+
+<script>
+(async function(){
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+
+/* ---------- i18n ---------- */
+const I18N={
+ru:{
+ title:'Пакеты сотовой связи Apple', light:'Светлая', dark:'Тёмная', theme:'Тема',
+ sub:'Подбор пакетов оператора (carrier bundles) из прошивки iOS по вашим требованиям. Каждое требование можно выключить, сделать желательным (жёлтая ячейка при несоответствии) или обязательным (красная — пакет отсеивается). Всё пересчитывается сразу; настройки запоминаются в вашем браузере.',
+ reqs:'Требования', reset:'Сбросить к умолчаниям', export:'Скопировать настройки', results:'Результаты',
+ search:'Пакет или MCC-MNC: Vodafone, _fi, 25001…', fit:'Подходят', lim1:'+ с 1 несоответствием', lim2:'+ с 2', all:'Все', seg:'Какие пакеты показывать', showoff:'показать все свойства',
+ lg_req:'не выполнено обязательное', lg_pref:'не выполнено желательное', lg_ok:'выполнено',
+ how:'Как читать',
+ n1:'<b>ePDG «из iOS»</b> — своего адреса в пакете нет, iOS подставляет шаблон <code>epdg.epc.mnc$mnc.mcc$mcc.pub.3gppnetwork.org</code> из IMSI вашей SIM, поэтому VoWiFi идёт на ePDG вашего оператора. «Шаблон» — то же, прописанное явно.',
+ n2:'<b>Entitlement</b> — пакет требует подтверждения услуги сервером оператора. Бит 7 в <code>SupportedEntitlements</code> считается признаком Wi-Fi Calling по статистике пакетов, а не по коду iOS.',
+ n3:'<b>ShowVolteSwitch</b> — только значение ключа в пакете; видимость переключателя VoLTE в iOS зависит ещё и от сети.',
+ n4:'Если ключа нет в пакете, значок сети и ShowVolteSwitch берутся из Default.bundle (LTE и true). Набор диапазонов 5G пакет не меняет — его задаёт таблица модема по стране.',
+ n5:'Всё — вывод по содержимому пакетов, а не проверка на устройстве.',
+ m_ios:'iOS', m_dev:'устройство', m_pk:'пакетов', m_date:'данные от',
+ foot:(m)=>'Данные извлечены из прошивки '+(m.deviceName||m.device)+' ('+m.device+'), iOS '+m.ios+' ('+m.build+'). Умолчания требований — defaults.json.',
+ t_req:'обязат.', t_pref:'желат.', t_off:'выкл',
+ mode_off:'выкл', mode_pref:'желательно', mode_req:'обязательно', mode_aria:'Режим',
+ th_pkg:'Пакет', th_sim:'SIM (MCC-MNC)', th_res:'Несоответствия', th_res_h:'✕ — не выполнено обязательных, ! — желательных', th_why:'Почему не подходит',
+ sum:(n,t)=>'из '+t+' пакетов выполняют все обязательные требования',
+ more:n=>'и ещё '+n, none:'Ни один пакет не подходит — ослабьте требования или нажмите «+ с 1 несоответствием».',
+ chipw:n=>n+' желат.', show:'Показать в таблице', ok_all:'все обязательные выполнены', nothing:'Ничего не найдено.',
+ in_tbl:n=>'В таблице: '+n, t_reset:'Требования сброшены к defaults.json', t_copy:'Скопировано в формате defaults.json',
+ err:'<b>Не удалось загрузить data.json или defaults.json.</b> Откройте страницу через веб-сервер (GitHub Pages или <code>python3 -m http.server</code> в папке сайта) — при открытии файла напрямую браузер запрещает загрузку.',
+ g_data:'Данные', g_voice:'Голос', g_vowifi:'VoWiFi', g_5g:'5G', g_apple:'Apple',
+ yes:'да', no:'нет', unset:'не задан', unset_n:'не задано', unset_f:'не задана', empty:'пусто', empty_apn:'пустой', has:'есть', nokeys:'не задано',
+ fromios:'из iOS', tmpl:'шаблон', dflt:'(по умолчанию iOS)', dflt_yes:'да (по умолчанию iOS)', bit7:'нужен (бит 7)', req_ent:'нужен', home:'дома', roam:'роуминг', cell:'сотовая', on_sa:'да, вкл.',
+},
+en:{
+ title:'Apple Carrier Bundles', light:'Light', dark:'Dark', theme:'Theme',
+ sub:'Pick carrier bundles from an iOS firmware by your own requirements. Every requirement can be off, preferred (yellow cell when not met) or required (red — the bundle is filtered out). Everything recalculates instantly; your settings are remembered in this browser.',
+ reqs:'Requirements', reset:'Reset to defaults', export:'Copy settings', results:'Results',
+ search:'Bundle or MCC-MNC: Vodafone, _fi, 25001…', fit:'Matching', lim1:'+ 1 mismatch', lim2:'+ 2 mismatches', all:'All', seg:'Which bundles to show', showoff:'show all properties',
+ lg_req:'required not met', lg_pref:'preferred not met', lg_ok:'met',
+ how:'How to read',
+ n1:'<b>ePDG “from iOS”</b> — the bundle has no address of its own, so iOS fills in the template <code>epdg.epc.mnc$mnc.mcc$mcc.pub.3gppnetwork.org</code> from your SIM’s IMSI and VoWiFi goes to your own carrier’s ePDG. “Template” is the same thing written explicitly.',
+ n2:'<b>Entitlement</b> — the bundle needs the carrier’s server to approve the service. Bit 7 of <code>SupportedEntitlements</code> is treated as the Wi-Fi Calling flag based on bundle statistics, not iOS code.',
+ n3:'<b>ShowVolteSwitch</b> is just the key’s value in the bundle; whether iOS shows the VoLTE switch also depends on the network.',
+ n4:'When a key is missing, the network badge and ShowVolteSwitch come from Default.bundle (LTE and true). The bundle does not change which 5G bands are allowed — the modem’s per-country table does.',
+ n5:'All of this is inferred from bundle contents, not tested on a device.',
+ m_ios:'iOS', m_dev:'device', m_pk:'bundles', m_date:'data from',
+ foot:(m)=>'Data extracted from the '+(m.deviceName||m.device)+' ('+m.device+') firmware, iOS '+m.ios+' ('+m.build+'). Requirement defaults live in defaults.json.',
+ t_req:'required', t_pref:'preferred', t_off:'off',
+ mode_off:'off', mode_pref:'preferred', mode_req:'required', mode_aria:'Mode',
+ th_pkg:'Bundle', th_sim:'SIM (MCC-MNC)', th_res:'Mismatches', th_res_h:'✕ — required not met, ! — preferred not met', th_why:'Why it doesn’t match',
+ sum:(n,t)=>'of '+t+' bundles meet every required item',
+ more:n=>'and '+n+' more', none:'No bundle matches — relax the requirements or press “+ 1 mismatch”.',
+ chipw:n=>n+' pref.', show:'Show in table', ok_all:'all required met', nothing:'Nothing found.',
+ in_tbl:n=>'In table: '+n, t_reset:'Requirements reset to defaults.json', t_copy:'Copied as defaults.json',
+ err:'<b>Could not load data.json or defaults.json.</b> Open the page through a web server (GitHub Pages or <code>python3 -m http.server</code> in the site folder) — browsers block loading files when the page is opened directly.',
+ g_data:'Data', g_voice:'Voice', g_vowifi:'VoWiFi', g_5g:'5G', g_apple:'Apple',
+ yes:'yes', no:'no', unset:'not set', unset_n:'not set', unset_f:'not set', empty:'empty', empty_apn:'empty', has:'yes', nokeys:'not set',
+ fromios:'from iOS', tmpl:'template', dflt:'(iOS default)', dflt_yes:'yes (iOS default)', bit7:'required (bit 7)', req_ent:'required', home:'home', roam:'roaming', cell:'cellular', on_sa:'yes, on',
+}};
+let lang=document.documentElement.lang==='en'?'en':'ru';
+const T=k=>I18N[lang][k]??I18N.ru[k]??k;
+
+/* ---------- rules ---------- */
+const PM=m=>m===3?'v4+v6':m===1?'v4':m===2?'v6':T('unset');
+const PK=m=>m===3?'v46':m===1?'v4':m===2?'v6':'unset';
+const pr=v=>v==='wifi'?'Wi-Fi':v==='ims'?'IMS':v==='cellular'?T('cell'):'—';
+const isIntl=n=>/^\+\d{7,}$/.test(n);
+const PROTO=()=>[['v46','v4+v6'],['v4','v4'],['v6','v6'],['unset',T('unset')]];
+const yn=b=>b?T('yes'):T('no');
+const tri=(v,u)=>v===true?T('yes'):v===false?T('no'):T(u||'unset');
+
+const RULES=[
+ {g:'g_data',id:'apnEdit',label:{ru:'APN интернета можно редактировать',en:'Internet APN is editable'},
+  f:r=>({s:!!(r.em&1),t:r.hasEdit?yn(r.em&1):T('nokeys')})},
+ {g:'g_data',id:'apnName',label:{ru:'APN по умолчанию',en:'Default APN'},hint:{ru:'если не совпадает — придётся вписать вручную',en:'if it differs you will have to type it in'},
+  params:[{k:'v',type:'text',label:{ru:'равен',en:'equals'}}],
+  f:(r,p)=>({s:r.inet.toLowerCase()===String(p.v||'').trim().toLowerCase(),t:esc(r.inet||T('empty_apn'))})},
+ {g:'g_data',id:'inetProto',label:{ru:'Протокол APN интернета',en:'Internet APN protocol'},params:[{k:'set',type:'checks',opts:PROTO}],
+  f:(r,p)=>({s:p.set.includes(PK(r.inetp)),t:PM(r.inetp)})},
+ {g:'g_data',id:'mms',label:{ru:'Настройки MMS',en:'MMS settings'},hint:{ru:'пустые — телефон не шлёт MMS на сервер чужого оператора',en:'empty — the phone won’t send MMS to another carrier’s server'},
+  params:[{k:'v',type:'select',opts:()=>[['empty',lang==='en'?'empty':'пустые'],['filled',lang==='en'?'filled':'заполненные']]}],
+  f:(r,p)=>{const e=!r.mmsc;return {s:p.v==='empty'?e:!e,t:e?T('empty'):'<span class="mono">'+esc(r.mmsc.replace(/^https?:\/\//,'').slice(0,34))+'</span>'}}},
+ {g:'g_data',id:'mmsEdit',label:{ru:'APN MMS можно редактировать',en:'MMS APN is editable'},f:r=>({s:!!(r.em&4),t:yn(r.em&4)})},
+
+ {g:'g_voice',id:'ims',label:{ru:'IMS (VoLTE) поддерживается',en:'IMS (VoLTE) supported'},f:r=>({s:r.ims,t:yn(r.ims)})},
+ {g:'g_voice',id:'evs',label:{ru:'Кодек EVS',en:'EVS codec'},f:r=>({s:r.evs,t:r.evs?T('has'):T('no')})},
+ {g:'g_voice',id:'volteDef',label:{ru:'VoLTE включён по умолчанию',en:'VoLTE on by default'},f:r=>({s:r.volteDef===true,t:tri(r.volteDef)})},
+ {g:'g_voice',id:'volteKey',label:{ru:'Переключатель VoLTE в настройках',en:'VoLTE switch in Settings'},hint:{ru:'по ключу ShowVolteSwitch; на телефоне может не совпадать',en:'from the ShowVolteSwitch key; may differ on the phone'},
+  f:r=>({s:r.vs!==false,t:r.vs===true?T('yes'):r.vs===false?T('no'):T('dflt_yes')})},
+ {g:'g_voice',id:'xcap',label:{ru:'Доп. услуги через XCAP',en:'Supplementary services via XCAP'},hint:{ru:'переадресация, ожидание вызова через IMS',en:'call forwarding, call waiting over IMS'},f:r=>({s:r.xcap===true,t:tri(r.xcap,'unset_n')})},
+ {g:'g_voice',id:'vvm',label:{ru:'Нет визуальной голосовой почты',en:'No visual voicemail'},hint:{ru:'иначе iPhone шлёт служебные SMS на номер чужого оператора',en:'otherwise the iPhone sends service SMS to another carrier’s number'},
+  f:r=>{const v=r.vvm&&r.vvm!=='none';return {s:!v,t:v?esc(r.vvm)+(r.beacon?' → <span class="mono">'+esc(r.beacon)+'</span>':''):(r.vvm==='none'?T('no'):T('unset_f'))}}},
+ {g:'g_voice',id:'vmpilot',label:{ru:'Нет чужого номера голосовой почты',en:'No foreign voicemail number'},f:r=>({s:!r.vmpilot,t:r.vmpilot?'<span class="mono">'+esc(r.vmpilot)+'</span>':T('no')})},
+
+ {g:'g_vowifi',id:'epdg',label:{ru:'ePDG не зашит на чужого оператора',en:'ePDG not hard-coded to another carrier'},
+  f:r=>!r.ra?{s:true,t:T('fromios')}:r.ra.includes('$')?{s:true,t:T('tmpl')}:{s:false,t:'<span class="mono">'+esc(r.ra)+'</span>'}},
+ {g:'g_vowifi',id:'imsProto',label:{ru:'Протокол APN ims',en:'ims APN protocol'},params:[{k:'set',type:'checks',opts:PROTO}],
+  f:(r,p)=>r.ims?{s:p.set.includes(PK(r.imsp)),t:PM(r.imsp)}:{s:null,t:'—'}},
+ {g:'g_vowifi',id:'ent',label:{ru:'VoWiFi без entitlement',en:'VoWiFi without entitlement'},hint:{ru:'entitlement — подтверждение услуги сервером оператора пакета',en:'entitlement — service approval by the bundle carrier’s server'},
+  f:r=>{const b7=r.ce!=null&&(r.ce>>7&1);const need=r.wo===false||b7;return {s:!need,t:need?(b7?T('bit7'):T('req_ent')):(r.wo===true?(lang==='en'?'not required':'не нужен'):(lang==='en'?'not required (not set)':'не нужен (не задано)'))}}},
+ {g:'g_vowifi',id:'sec',label:{ru:'IMS: IPsec и аутентификация',en:'IMS: IPsec and authentication'},
+  params:[{k:'v',type:'select',opts:()=>[['v2','IPsec + AKAv2'],['on',lang==='en'?'IPsec on':'IPsec включён'],['offx',lang==='en'?'IPsec off':'IPsec выключен']]}],
+  f:(r,p)=>{if(!r.ims)return {s:null,t:'—'};const t=(r.ipsec===true?T('yes'):r.ipsec===false?T('no'):'—')+' / '+esc((r.auth||'—').replace('-MD5',''));
+   return {s:p.v==='v2'?(r.ipsec===true&&r.auth==='AKAv2-MD5'):p.v==='on'?r.ipsec===true:r.ipsec===false,t}}},
+ {g:'g_vowifi',id:'iwlan',label:{ru:'Расширенные настройки iWLAN',en:'Advanced iWLAN settings'},hint:{ru:'передача вызова Wi-Fi↔LTE, без DPD, явный LocalIdentifier',en:'Wi-Fi↔LTE call handover, DPD off, explicit LocalIdentifier'},
+  params:[{k:'set',type:'checks',opts:()=>[['ho','handover'],['dpd',lang==='en'?'DPD off':'DPD выкл'],['lid','LocalIdentifier']]}],
+  f:(r,p)=>{const h={ho:!!r.ho,dpd:r.dpd===false,lid:r.lid};return {s:p.set.every(k=>h[k]),t:[r.ho?'handover':'',r.dpd===false?(lang==='en'?'DPD off':'DPD выкл'):'',r.lid?'LocalIdentifier':''].filter(Boolean).join(' · ')||T('no')}}},
+ {g:'g_vowifi',id:'prio',label:{ru:'Приоритет звонков через Wi-Fi',en:'Wi-Fi calling preferred'},
+  params:[{k:'v',type:'select',opts:()=>lang==='en'?[['any','at home or roaming'],['home','at home'],['roam','roaming']]:[['any','дома или в роуминге'],['home','дома'],['roam','в роуминге']]}],
+  f:(r,p)=>{const h=r.ih==='wifi',o=r.ir==='wifi';return {s:p.v==='home'?h:p.v==='roam'?o:(h||o),t:(!r.ih&&!r.ir)?T('unset'):T('home')+': '+pr(r.ih)+' · '+T('roam')+': '+pr(r.ir)}}},
+ {g:'g_vowifi',id:'wroam',label:{ru:'Wi-Fi Calling разрешён в роуминге',en:'Wi-Fi Calling allowed when roaming'},f:r=>({s:r.wroam===true,t:tri(r.wroam,'unset_n')})},
+ {g:'g_vowifi',id:'label',label:{ru:'Нет надписи оператора при звонке через Wi-Fi',en:'No carrier label on Wi-Fi calls'},f:r=>({s:!r.wn,t:r.wn?esc(r.wn):T('no')})},
+
+ {g:'g_5g',id:'nr',label:{ru:'5G включён',en:'5G enabled'},f:r=>{const s=r.sw5g===true||r.auto5g===true||r.en5g===true;return {s,t:yn(s)}}},
+ {g:'g_5g',id:'sa',label:{ru:'5G SA',en:'5G SA'},f:r=>({s:r.sa===true,t:r.sa===true?(r.saDef?T('on_sa'):T('yes')):T('no')})},
+ {g:'g_5g',id:'vonr',label:{ru:'VoNR',en:'VoNR'},f:r=>({s:r.vonr===true,t:yn(r.vonr===true)})},
+ {g:'g_5g',id:'badge',label:{ru:'Значок сети в LTE',en:'Network badge on LTE'},params:[{k:'v',type:'select',opts:()=>[['4G','4G'],['LTE','LTE']]}],
+  f:(r,p)=>{const v=r.lte||'LTE';return {s:v===p.v,t:r.lte?esc(r.lte):'LTE '+T('dflt')}}},
+
+ {g:'g_apple',id:'ft',label:{ru:'FaceTime/iMessage: международный номер активации',en:'FaceTime/iMessage: international activation number'},hint:{ru:'короткий местный номер в вашей сети не существует',en:'a short local number doesn’t exist on your network'},
+  f:r=>({s:isIntl(r.reg),t:r.reg?'<span class="mono">'+esc(r.reg)+'</span>'+(r.regn>1?' '+(lang==='en'?'(+'+(r.regn-1)+' more)':'(и ещё '+(r.regn-1)+')'):''):T('unset')})},
+];
+const L=o=>o?(o[lang]??o.ru):'';
+const opts=o=>typeof o==='function'?o():o;
+const PARAM_FALLBACK={apnName:{v:'internet'},inetProto:{set:['v46']},mms:{v:'empty'},imsProto:{set:['v46']},sec:{v:'v2'},iwlan:{set:['ho','dpd','lid']},prio:{v:'any'},badge:{v:'4G'}};
+
+/* ---------- static text, theme, language ---------- */
+function applyStatic(){
+  document.documentElement.lang=lang;document.title=T('title');
+  for(const el of document.querySelectorAll('[data-i18n]'))el.textContent=T(el.dataset.i18n);
+  for(const el of document.querySelectorAll('[data-i18n-html]'))el.innerHTML=T(el.dataset.i18nHtml);
+  for(const el of document.querySelectorAll('[data-i18n-ph]'))el.placeholder=T(el.dataset.i18nPh);
+  for(const el of document.querySelectorAll('[data-i18n-aria]'))el.setAttribute('aria-label',T(el.dataset.i18nAria));
+  for(const b of $('lang-t').querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.dataset.lang===lang));
+}
+function syncTheme(){const t=document.documentElement.dataset.theme==='dark'?'dark':'light';
+  for(const b of $('theme-t').querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.dataset.themeSet===t))}
+$('theme-t').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.documentElement.dataset.theme=b.dataset.themeSet;store.set('acb:theme',b.dataset.themeSet);syncTheme()});
+applyStatic();syncTheme();
+
+/* ---------- data ---------- */
+let DATA,META,DEF;
+try{
+  const [d,f]=await Promise.all([fetch('data.json',{cache:'no-cache'}),fetch('defaults.json',{cache:'no-cache'})]);
+  if(!d.ok||!f.ok)throw new Error('HTTP '+(d.ok?f.status:d.status));
+  const dj=await d.json();DATA=dj.bundles;META=dj.meta;DEF=await f.json();
+}catch(e){
+  $('tb').innerHTML='';$('summary').innerHTML='<div class="err">'+T('err')+' ('+esc(e.message)+')</div>';
+  $('lang-t').addEventListener('click',ev=>{const b=ev.target.closest('button');if(!b)return;lang=b.dataset.lang;store.set('acb:lang',lang);applyStatic();$('summary').innerHTML='<div class="err">'+T('err')+'</div>'});
+  return;
+}
+const MODES=['off','pref','req'];
+function defaults(){const s={};
+  for(const r of RULES){const d=(DEF.rules||{})[r.id]||{};
+    s[r.id]={m:MODES.includes(d.mode)?d.mode:'off',p:JSON.parse(JSON.stringify({...(PARAM_FALLBACK[r.id]||{}),...(d.params||{})}))}}
+  return s}
+const DKEY=JSON.stringify(DEF),KEY='acb:rules';
+let state=defaults();
+try{const s=JSON.parse(store.get(KEY)||'null');
+  if(s&&s.def===DKEY&&s.rules)for(const id in s.rules)if(state[id]){state[id].m=s.rules[id].m;Object.assign(state[id].p,s.rules[id].p||{})}}catch(e){}
+function save(){store.set(KEY,JSON.stringify({def:DKEY,rules:state}))}
+
+function header(){
+  $('meta').innerHTML='<span>'+T('m_ios')+' <b>'+esc(META.ios)+'</b> ('+esc(META.build)+')</span><span title="'+esc(META.device)+'">'+T('m_dev')+' <b>'+esc(META.deviceName||META.device)+'</b></span><span><b>'+DATA.length+'</b> '+T('m_pk')+'</span><span>'+T('m_date')+' '+esc(META.generated)+'</span>';
+  $('foot').textContent=I18N[lang].foot(META);
+}
+
+function buildRules(){
+  const box=$('groups');box.innerHTML='';
+  for(const g of [...new Set(RULES.map(r=>r.g))]){
+    const det=document.createElement('details');det.className='group';det.open=true;det.dataset.g=g;
+    let h='<summary><span>'+esc(T(g))+'</span><span style="display:flex;gap:10px;align-items:center"><span class="dots"></span><span class="chev" aria-hidden="true">›</span></span></summary><div class="rules">';
+    for(const r of RULES.filter(x=>x.g===g)){
+      const st=state[r.id];
+      h+='<div class="rule'+(st.m==='off'?' off':'')+'" data-id="'+r.id+'"><div class="rule-top"><div class="lbl">'+esc(L(r.label))+(r.hint?'<small>'+esc(L(r.hint))+'</small>':'')+'</div>'+
+        '<div class="mode" role="group" aria-label="'+esc(T('mode_aria')+': '+L(r.label))+'">'+MODES.map(m=>'<button type="button" data-m="'+m+'" aria-pressed="'+(st.m===m)+'">'+T('mode_'+m)+'</button>').join('')+'</div></div>';
+      if(r.params){h+='<div class="params">';for(const x of r.params){const id='p-'+r.id+'-'+x.k;
+        if(x.type==='text')h+='<label for="'+id+'">'+esc(L(x.label))+'</label><input type="text" id="'+id+'" data-k="'+x.k+'" value="'+esc(st.p[x.k])+'">';
+        if(x.type==='select')h+='<select id="'+id+'" data-k="'+x.k+'" aria-label="'+esc(L(r.label))+'">'+opts(x.opts).map(([v,t])=>'<option value="'+v+'"'+(st.p[x.k]===v?' selected':'')+'>'+esc(t)+'</option>').join('')+'</select>';
+        if(x.type==='checks')h+=opts(x.opts).map(([v,t])=>'<label class="pill-check"><input type="checkbox" id="'+id+'-'+v+'" data-k="'+x.k+'" value="'+v+'"'+((st.p[x.k]||[]).includes(v)?' checked':'')+'>'+esc(t)+'</label>').join('');
+      }h+='</div>'}
+      h+='</div>';
+    }
+    det.innerHTML=h+'</div>';box.appendChild(det);
+  }
+  dots();
+}
+function dots(){
+  for(const det of document.querySelectorAll('details.group'))
+    det.querySelector('.dots').innerHTML=RULES.filter(r=>r.g===det.dataset.g).map(r=>'<i class="'+state[r.id].m+'"></i>').join('');
+  const n={req:0,pref:0,off:0};for(const r of RULES)n[state[r.id].m]++;
+  $('tally').innerHTML='<span class="t-req">'+n.req+' '+T('t_req')+'</span><span class="t-pref">'+n.pref+' '+T('t_pref')+'</span><span class="t-off">'+n.off+' '+T('t_off')+'</span>';
+}
+$('groups').addEventListener('click',e=>{
+  const b=e.target.closest('.mode button');if(!b)return;
+  const row=b.closest('.rule'),id=row.dataset.id;state[id].m=b.dataset.m;
+  for(const x of row.querySelectorAll('.mode button'))x.setAttribute('aria-pressed',String(x===b));
+  row.classList.toggle('off',state[id].m==='off');save();dots();render();
+});
+$('groups').addEventListener('input',e=>{
+  const el=e.target,row=el.closest('.rule');if(!row||!el.dataset.k)return;const st=state[row.dataset.id];
+  if(el.type==='checkbox'){const set=new Set(st.p[el.dataset.k]||[]);el.checked?set.add(el.value):set.delete(el.value);st.p[el.dataset.k]=[...set]}
+  else st.p[el.dataset.k]=el.value;
+  save();render();
+});
+$('reset').addEventListener('click',()=>{state=defaults();store.del(KEY);buildRules();render();toast(T('t_reset'))});
+$('export').addEventListener('click',async()=>{
+  const out={_help:DEF._help,rules:{},table:{maxRed:lim,showOffColumns:$('showoff').checked}};
+  for(const r of RULES){const o={mode:state[r.id].m};if(r.params)o.params=state[r.id].p;out.rules[r.id]=o}
+  const txt=JSON.stringify(out,null,2);
+  try{await navigator.clipboard.writeText(txt);toast(T('t_copy'))}
+  catch(e){const w=document.createElement('textarea');w.value=txt;w.style.cssText='width:100%;height:220px;font-family:var(--mono);font-size:12px';$('toast').replaceChildren(w);w.select()}
+});
+let tt;function toast(t){$('toast').textContent=t;clearTimeout(tt);tt=setTimeout(()=>$('toast').textContent='',2600)}
+$('lang-t').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.dataset.lang===lang)return;
+  lang=b.dataset.lang;store.set('acb:lang',lang);applyStatic();header();buildRules();render()});
+
+let lim=+((DEF.table||{}).maxRed??0);
+$('showoff').checked=!!(DEF.table||{}).showOffColumns;
+function syncSeg(){for(const x of $('seg').querySelectorAll('button'))x.setAttribute('aria-pressed',String(+x.dataset.lim===lim))}
+for(const b of $('seg').querySelectorAll('button'))b.addEventListener('click',()=>{lim=+b.dataset.lim;syncSeg();render()});
+syncSeg();
+$('q').addEventListener('input',render);
+$('showoff').addEventListener('change',render);
+$('summary').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;$('q').value=c.dataset.b;render();$('q').focus()});
+
+function render(){
+  const showOff=$('showoff').checked;
+  const cols=RULES.filter(r=>showOff||state[r.id].m!=='off');
+  $('thead').innerHTML='<tr><th class="name">'+T('th_pkg')+'<span class="l" style="font-weight:400;color:var(--faint)">'+T('th_sim')+'</span></th><th title="'+esc(T('th_res_h'))+'">'+T('th_res')+'<span class="l" style="font-weight:400;color:var(--faint)">'+esc(T('th_res_h'))+'</span></th>'+
+    cols.map(r=>'<th><span class="l">'+esc(L(r.label))+'</span><span class="m '+state[r.id].m+'">'+T('mode_'+state[r.id].m)+'</span></th>').join('')+'<th>'+T('th_why')+'</th></tr>';
+  const rows=DATA.map(r=>{let bad=0,warn=0;const cells={},why=[],soft=[];
+    for(const R of RULES){const st=state[R.id];const v=R.f(r,st.p);let cls='';
+      if(v.s===null)cls='na';else if(st.m==='off')cls='';else if(v.s)cls='ok';
+      else if(st.m==='req'){cls='bad';bad++;why.push(L(R.label))}else{cls='warn';warn++;soft.push(L(R.label))}
+      cells[R.id]={cls,t:v.t}}
+    return {r,bad,warn,cells,why,soft}}).sort((a,b)=>a.bad-b.bad||a.warn-b.warn||a.r.b.localeCompare(b.r.b));
+  const pass=rows.filter(x=>x.bad===0);
+  $('summary').innerHTML='<div class="sum-line"><span class="big">'+pass.length+'</span><span class="of">'+I18N[lang].sum(pass.length,DATA.length)+'</span></div>'+
+    (pass.length?'<div class="chips">'+pass.slice(0,40).map(x=>'<button type="button" class="chip'+(x.warn?' warn':'')+'" data-b="'+esc(x.r.b)+'" title="'+esc(T('show'))+'">'+esc(x.r.b)+(x.warn?' <small>· '+I18N[lang].chipw(x.warn)+'</small>':'')+'</button>').join('')+(pass.length>40?'<span class="empty">'+I18N[lang].more(pass.length-40)+'</span>':'')+'</div>'
+     :'<p class="empty" style="margin:0">'+T('none')+'</p>');
+  const q=$('q').value.trim().toLowerCase();
+  const out=[];let n=0;
+  for(const x of rows){
+    if(x.bad>lim)continue;
+    if(q&&!(x.r.b+' '+x.r.sims.join(' ')).toLowerCase().includes(q))continue;
+    n++;
+    const sc=(x.bad?'<i class="r">'+x.bad+' ✕</i>':'')+(x.warn?'<i class="p">'+x.warn+' !</i>':'')+(!x.bad&&!x.warn?'<i class="g">✓</i>':'');
+    out.push('<tr class="'+(x.bad===0?'pass':'')+'"><td class="name">'+esc(x.r.b)+'<span class="sims">'+esc(x.r.sims.join(' '))+'</span></td><td><span class="score">'+sc+'</span></td>'+
+      cols.map(R=>'<td class="'+x.cells[R.id].cls+'">'+x.cells[R.id].t+'</td>').join('')+
+      '<td class="why">'+(x.why.length?x.why.map(w=>'<b>'+esc(w)+'</b>').join(', '):T('ok_all'))+(x.soft.length?'; <em>'+x.soft.map(esc).join(', ')+'</em>':'')+'</td></tr>');
+  }
+  $('tb').innerHTML=out.join('')||'<tr><td colspan="'+(cols.length+3)+'" style="white-space:normal;color:var(--muted)">'+T('nothing')+'</td></tr>';
+  $('count').textContent=I18N[lang].in_tbl(n);
+}
+header();buildRules();render();
+})();
+</script>
+</body>
+</html>
