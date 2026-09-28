@@ -47,7 +47,7 @@ python3 -m http.server 8000
 | `ims` | IMS (VoLTE) поддерживается | — |
 | `evs` | кодек EVS | — |
 | `volteDef` | VoLTE включён по умолчанию | — |
-| `volteKey` | ShowVolteSwitch = true | — |
+| `volteKey` | переключатель VoLTE в настройках (ключ ShowVolteSwitch) | — |
 | `xcap` | доп. услуги через XCAP | — |
 | `vvm` | нет визуальной голосовой почты | — |
 | `vmpilot` | нет чужого номера голосовой почты | — |
@@ -59,7 +59,7 @@ python3 -m http.server 8000
 | `prio` | приоритет звонков через Wi-Fi | `v`: `any` / `home` / `roam` |
 | `wroam` | Wi-Fi Calling разрешён в роуминге | — |
 | `label` | нет надписи оператора при звонке через Wi-Fi | — |
-| `nr` | 5G включён | — |
+| `nr` | 5G доступен (переключатель не скрыт пакетом) | — |
 | `sa` | 5G SA | — |
 | `vonr` | VoNR | — |
 | `badge` | значок сети в LTE | `v`: `4G` / `LTE` |
@@ -67,12 +67,12 @@ python3 -m http.server 8000
 
 ## Обновление данных
 
-Распакуйте пакеты из IPSW (`System/Library/Carrier Bundles/iPhone/*.bundle`, с `*.plist.json` рядом с каждым plist) и выполните:
+Распакуйте из IPSW пакеты операторов (`System/Library/Carrier Bundles/iPhone/*.bundle`, включая `Default.bundle`) и выполните:
 
 ```bash
-python3 tools/build_data.py <папка_с_пакетами> 27.0 24A437 iPhone18,3 > data.json
+python3 tools/build_data.py <папка_с_пакетами> 27.0 24A437 iPhone18,3 "iPhone 17" V53_V54_V57 > data.json
 ```
 
-Читаются `carrier.plist.json` и `overrides_V53_V54_V57.plist.json` (override для iPhone18,3). Для другого устройства поменяйте имя override-файла в скрипте.
+Скрипт читает plist напрямую и собирает настройки как iOS: `overrides_<плата>.plist` (для iPhone 17 — `V53_V54_V57`) глубоко сливается поверх `carrier.plist`; отсутствующие ключи берутся из `Default.bundle`, а затем из значений по умолчанию CommCenter (`CODE_DEFAULTS` в скрипте).
 
 Все выводы — по содержимому пакетов, не проверка на устройстве.

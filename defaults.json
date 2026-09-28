@@ -1,35 +1,116 @@
 {
   "_help": "Режимы: off — выключено, pref — желательно, req — обязательно. Параметры (params) задают, что считается выполнением требования. Кнопка «Скопировать настройки» на странице выдаёт этот же формат.",
   "rules": {
-    "apnEdit":   { "mode": "pref" },
-    "apnName":   { "mode": "pref", "params": { "v": "internet" } },
-    "inetProto": { "mode": "off",  "params": { "set": ["v46", "v4", "unset"] } },
-    "mms":       { "mode": "off" , "params": { "v": "empty" } },
-    "mmsEdit":   { "mode": "off" },
-
-    "ims":       { "mode": "req" },
-    "evs":       { "mode": "req" },
-    "volteDef":  { "mode": "pref" },
-    "volteKey":  { "mode": "off" },
-    "xcap":      { "mode": "off" },
-    "vvm":       { "mode": "req" },
-    "vmpilot":   { "mode": "off" },
-
-    "epdg":      { "mode": "req" },
-    "imsProto":  { "mode": "req",  "params": { "set": ["v46", "unset"] } },
-    "ent":       { "mode": "off" },
-    "sec":       { "mode": "off",  "params": { "v": "v2" } },
-    "iwlan":     { "mode": "off",  "params": { "set": ["ho", "dpd", "lid"] } },
-    "prio":      { "mode": "off",  "params": { "v": "any" } },
-    "wroam":     { "mode": "off" },
-    "label":     { "mode": "off" },
-
-    "nr":        { "mode": "req" },
-    "sa":        { "mode": "off" },
-    "vonr":      { "mode": "off" },
-    "badge":     { "mode": "off" , "params": { "v": "LTE" } },
-
-    "ft":        { "mode": "req" }
+    "apnEdit": {
+      "mode": "pref"
+    },
+    "apnName": {
+      "mode": "pref",
+      "params": {
+        "v": "internet"
+      }
+    },
+    "inetProto": {
+      "mode": "off",
+      "params": {
+        "set": [
+          "v46",
+          "v4",
+          "unset"
+        ]
+      }
+    },
+    "mms": {
+      "mode": "off",
+      "params": {
+        "v": "empty"
+      }
+    },
+    "mmsEdit": {
+      "mode": "off"
+    },
+    "ims": {
+      "mode": "req"
+    },
+    "evs": {
+      "mode": "req"
+    },
+    "volteDef": {
+      "mode": "pref"
+    },
+    "volteKey": {
+      "mode": "off"
+    },
+    "xcap": {
+      "mode": "off"
+    },
+    "vvm": {
+      "mode": "req"
+    },
+    "vmpilot": {
+      "mode": "off"
+    },
+    "epdg": {
+      "mode": "req"
+    },
+    "imsProto": {
+      "mode": "req",
+      "params": {
+        "set": [
+          "v46",
+          "unset"
+        ]
+      }
+    },
+    "ent": {
+      "mode": "off"
+    },
+    "sec": {
+      "mode": "off",
+      "params": {
+        "v": "v2"
+      }
+    },
+    "iwlan": {
+      "mode": "off",
+      "params": {
+        "set": [
+          "ho",
+          "dpd",
+          "lid"
+        ]
+      }
+    },
+    "prio": {
+      "mode": "off",
+      "params": {
+        "v": "any"
+      }
+    },
+    "wroam": {
+      "mode": "off"
+    },
+    "label": {
+      "mode": "off"
+    },
+    "nr": {
+      "mode": "req"
+    },
+    "sa": {
+      "mode": "off"
+    },
+    "vonr": {
+      "mode": "off"
+    },
+    "badge": {
+      "mode": "off",
+      "params": {
+        "v": "LTE"
+      }
+    },
+    "ft": {
+      "mode": "req"
+    }
   },
   "table": {
     "maxRed": 0,
