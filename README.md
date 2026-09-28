@@ -67,12 +67,12 @@ python3 -m http.server 8000
 
 ## Обновление данных
 
-Распакуйте из IPSW пакеты операторов (`System/Library/Carrier Bundles/iPhone/*.bundle`, включая `Default.bundle`) и выполните:
+Распакуйте из IPSW пакеты операторов (`System/Library/Carrier Bundles/iPhone/*.bundle`, включая `Default.bundle`) и страновые пакеты (`System/Library/CountryBundles/iPhone/*.bundle`) и выполните:
 
 ```bash
-python3 tools/build_data.py <папка_с_пакетами> 27.0 24A437 iPhone18,3 "iPhone 17" V53_V54_V57 > data.json
+python3 tools/build_data.py <папка_с_пакетами> 27.0 24A437 iPhone18,3 "iPhone 17" V53_V54_V57 <папка_страновых_пакетов> > data.json
 ```
 
-Скрипт читает plist напрямую и собирает настройки как iOS: `overrides_<плата>.plist` (для iPhone 17 — `V53_V54_V57`) глубоко сливается поверх `carrier.plist`; отсутствующие ключи берутся из `Default.bundle`, а затем из значений по умолчанию CommCenter (`CODE_DEFAULTS` в скрипте).
+Скрипт читает plist напрямую и собирает настройки как iOS: `overrides_<плата>.plist` (для iPhone 17 — `V53_V54_V57`) глубоко сливается поверх `carrier.plist`; поверх — страновой пакет страны, чей MCC стоит в `SupportedSIMs` пакета (257 → Belarus, 250 → Russia), он перекрывает значения оператора; отсутствующие ключи берутся из `Default.bundle`, а затем из значений по умолчанию CommCenter (`CODE_DEFAULTS` в скрипте).
 
 Все выводы — по содержимому пакетов, не проверка на устройстве.

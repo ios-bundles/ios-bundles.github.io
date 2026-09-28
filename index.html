@@ -78,6 +78,8 @@ h2{margin:0;font-size:16px;font-weight:700;letter-spacing:-.01em}
 .btn{border:1px solid var(--line);background:var(--surface);padding:6px 12px;border-radius:9px;cursor:pointer;font-size:13px;font-weight:500}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
 .toast{font-size:12.5px;color:var(--ok-fg);min-height:1em}
+.ctag{display:inline-block;font-size:10.5px;font-weight:600;opacity:.8;margin-left:4px}
+td.name .cty{display:block;font-size:11px;font-weight:500;color:var(--muted)}
 details.group{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
 details.group>summary{list-style:none;cursor:pointer;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 details.group>summary::-webkit-details-marker{display:none}
@@ -249,7 +251,7 @@ ru:{
  n1:'<b>ePDG «из iOS»</b> — своего адреса в пакете нет, iOS подставляет шаблон <code>epdg.epc.mnc$mnc.mcc$mcc.pub.3gppnetwork.org</code> из IMSI вашей SIM, поэтому VoWiFi идёт на ePDG вашего оператора. «Шаблон» — то же, прописанное явно.',
  n2:'<b>Entitlement</b> — пакет требует подтверждения услуги сервером оператора. Бит 7 в <code>SupportedEntitlements</code> считается признаком Wi-Fi Calling по статистике пакетов, а не по коду iOS.',
  n3:'<b>ShowVolteSwitch</b> — только значение ключа в пакете; видимость переключателя VoLTE в iOS зависит ещё и от сети.',
- n4:'Настройки пакета собираются как в iOS: override для устройства поверх carrier.plist; если ключа нет в пакете — значение из Default.bundle, а если нет и там — значение по умолчанию из CommCenter (такие ячейки помечены «по умолчанию iOS»). Набор диапазонов 5G пакет не меняет — его задаёт таблица модема по стране.',
+ n4:'Настройки пакета собираются как в iOS: override для устройства поверх carrier.plist; поверх — страновой пакет iOS страны, чей MCC у SIM этого пакета (257 → Belarus, 250 → Russia…), такие ячейки помечены названием страны; если ключа нет нигде — значение из Default.bundle, а затем значение по умолчанию из CommCenter («по умолчанию iOS»). Набор диапазонов 5G пакет не меняет — его задаёт таблица модема по стране.',
  n5:'Всё — вывод по содержимому пакетов, а не проверка на устройстве.',
  m_ios:'iOS', m_dev:'устройство', m_pk:'пакетов', m_date:'данные от',
  foot:(m)=>'Данные извлечены из прошивки '+(m.deviceName||m.device)+' ('+m.device+'), iOS '+m.ios+' ('+m.build+'). Умолчания требований — defaults.json.',
@@ -263,7 +265,7 @@ ru:{
  err:'<b>Не удалось загрузить data.json или defaults.json.</b> Откройте страницу через веб-сервер (GitHub Pages или <code>python3 -m http.server</code> в папке сайта) — при открытии файла напрямую браузер запрещает загрузку.',
  g_data:'Данные', g_voice:'Голос', g_vowifi:'VoWiFi', g_5g:'5G', g_apple:'Apple',
  yes:'да', no:'нет', unset:'не задан', unset_n:'не задано', unset_f:'не задана', empty:'пусто', empty_apn:'пустой', has:'есть', nokeys:'не задано',
- fromios:'из iOS', tmpl:'шаблон', dflt:'(по умолчанию iOS)', dflt_yes:'да (по умолчанию iOS)', on5g:'включён по умолчанию', bit7:'нужен (бит 7)', req_ent:'нужен', home:'дома', roam:'роуминг', cell:'сотовая', on_sa:'да, вкл.',
+ fromios:'из iOS', tmpl:'шаблон', dflt:'(по умолчанию iOS)', dflt_yes:'да (по умолчанию iOS)', on5g:'включён по умолчанию', cty:'пакет страны', ctag_h:'Значение перекрыто страновым пакетом iOS для страны SIM этого пакета', bit7:'нужен (бит 7)', req_ent:'нужен', home:'дома', roam:'роуминг', cell:'сотовая', on_sa:'да, вкл.',
 },
 en:{
  title:'Apple Carrier Bundles', light:'Light', dark:'Dark', theme:'Theme',
@@ -275,7 +277,7 @@ en:{
  n1:'<b>ePDG “from iOS”</b> — the bundle has no address of its own, so iOS fills in the template <code>epdg.epc.mnc$mnc.mcc$mcc.pub.3gppnetwork.org</code> from your SIM’s IMSI and VoWiFi goes to your own carrier’s ePDG. “Template” is the same thing written explicitly.',
  n2:'<b>Entitlement</b> — the bundle needs the carrier’s server to approve the service. Bit 7 of <code>SupportedEntitlements</code> is treated as the Wi-Fi Calling flag based on bundle statistics, not iOS code.',
  n3:'<b>ShowVolteSwitch</b> is just the key’s value in the bundle; whether iOS shows the VoLTE switch also depends on the network.',
- n4:'Bundle settings are assembled the way iOS does it: the device override on top of carrier.plist; a key missing from the bundle comes from Default.bundle, and failing that from CommCenter’s built-in default (such cells say “iOS default”). The bundle does not change which 5G bands are allowed — the modem’s per-country table does.',
+ n4:'Bundle settings are assembled the way iOS does it: the device override on top of carrier.plist; on top of that the iOS country bundle for the country of the bundle’s SIM MCC (257 → Belarus, 250 → Russia…), such cells are tagged with the country; a key missing everywhere comes from Default.bundle, then from CommCenter’s built-in default (“iOS default”). The bundle does not change which 5G bands are allowed — the modem’s per-country table does.',
  n5:'All of this is inferred from bundle contents, not tested on a device.',
  m_ios:'iOS', m_dev:'device', m_pk:'bundles', m_date:'data from',
  foot:(m)=>'Data extracted from the '+(m.deviceName||m.device)+' ('+m.device+') firmware, iOS '+m.ios+' ('+m.build+'). Requirement defaults live in defaults.json.',
@@ -289,7 +291,7 @@ en:{
  err:'<b>Could not load data.json or defaults.json.</b> Open the page through a web server (GitHub Pages or <code>python3 -m http.server</code> in the site folder) — browsers block loading files when the page is opened directly.',
  g_data:'Data', g_voice:'Voice', g_vowifi:'VoWiFi', g_5g:'5G', g_apple:'Apple',
  yes:'yes', no:'no', unset:'not set', unset_n:'not set', unset_f:'not set', empty:'empty', empty_apn:'empty', has:'yes', nokeys:'not set',
- fromios:'from iOS', tmpl:'template', dflt:'(iOS default)', dflt_yes:'yes (iOS default)', on5g:'on by default', bit7:'required (bit 7)', req_ent:'required', home:'home', roam:'roaming', cell:'cellular', on_sa:'yes, on',
+ fromios:'from iOS', tmpl:'template', dflt:'(iOS default)', dflt_yes:'yes (iOS default)', on5g:'on by default', cty:'country bundle', ctag_h:'Value overridden by the iOS country bundle for this bundle’s SIM country', bit7:'required (bit 7)', req_ent:'required', home:'home', roam:'roaming', cell:'cellular', on_sa:'yes, on',
 }};
 let lang=document.documentElement.lang==='en'?'en':'ru';
 const T=k=>I18N[lang][k]??I18N.ru[k]??k;
@@ -320,7 +322,7 @@ const RULES=[
  {g:'g_voice',id:'evs',label:{ru:'Кодек EVS',en:'EVS codec'},f:r=>({s:r.evs,t:r.evs?T('has'):T('no')})},
  {g:'g_voice',id:'volteDef',label:{ru:'VoLTE включён по умолчанию',en:'VoLTE on by default'},f:r=>({s:r.volteDef===true,t:tri(r.volteDef)})},
  {g:'g_voice',id:'volteKey',label:{ru:'Переключатель VoLTE в настройках',en:'VoLTE switch in Settings'},hint:{ru:'по ключу ShowVolteSwitch; на телефоне может не совпадать',en:'from the ShowVolteSwitch key; may differ on the phone'},
-  f:r=>({s:r.vs!==false,t:r.vs===false?T('no'):(r.vsSrc==='bundle'?T('yes'):T('dflt_yes'))})},
+  f:r=>({s:r.vs!==false,t:r.vs===false?T('no'):(r.vsSrc==='bundle'||r.vsSrc==='country'?T('yes'):T('dflt_yes'))})},
  {g:'g_voice',id:'xcap',label:{ru:'Доп. услуги через XCAP',en:'Supplementary services via XCAP'},hint:{ru:'переадресация, ожидание вызова через IMS',en:'call forwarding, call waiting over IMS'},f:r=>({s:r.xcap===true,t:tri(r.xcap,'unset_n')})},
  {g:'g_voice',id:'vvm',label:{ru:'Нет визуальной голосовой почты',en:'No visual voicemail'},hint:{ru:'иначе iPhone шлёт служебные SMS на номер чужого оператора',en:'otherwise the iPhone sends service SMS to another carrier’s number'},
   f:r=>{const v=r.vvm&&r.vvm!=='none';return {s:!v,t:v?esc(r.vvm)+(r.beacon?' → <span class="mono">'+esc(r.beacon)+'</span>':''):(r.vvm==='none'?T('no'):T('unset_f'))}}},
@@ -346,16 +348,18 @@ const RULES=[
  {g:'g_vowifi',id:'label',label:{ru:'Нет надписи оператора при звонке через Wi-Fi',en:'No carrier label on Wi-Fi calls'},f:r=>({s:!r.wn,t:r.wn?esc(r.wn):T('no')})},
 
  {g:'g_5g',id:'nr',label:{ru:'5G доступен',en:'5G available'},hint:{ru:'переключатель 5G не скрыт пакетом (ключ Show5GSwitch)',en:'the bundle doesn’t hide the 5G switch (Show5GSwitch key)'},
-  f:r=>{const s=r.sw5g!==false;const on=r.auto5g===true||r.en5g===true;return {s,t:!s?T('no'):(r.sw5gSrc==='bundle'?T('yes'):T('dflt_yes'))+(on?' · '+T('on5g'):'')}}},
+  f:r=>{const s=r.sw5g!==false;const on=r.auto5g===true||r.en5g===true;return {s,t:!s?T('no'):(r.sw5gSrc==='bundle'||r.sw5gSrc==='country'?T('yes'):T('dflt_yes'))+(on?' · '+T('on5g'):'')}}},
  {g:'g_5g',id:'sa',label:{ru:'5G SA',en:'5G SA'},f:r=>({s:r.sa===true,t:r.sa===true?(r.saDef?T('on_sa'):T('yes')):T('no')})},
  {g:'g_5g',id:'vonr',label:{ru:'VoNR',en:'VoNR'},f:r=>({s:r.vonr===true,t:yn(r.vonr===true)})},
  {g:'g_5g',id:'badge',label:{ru:'Значок сети в LTE',en:'Network badge on LTE'},params:[{k:'v',type:'select',opts:()=>[['4G','4G'],['LTE','LTE']]}],
-  f:(r,p)=>{const v=r.lte||'LTE';return {s:v===p.v,t:esc(v)+(r.lteSrc==='bundle'?'':' '+T('dflt'))}}},
+  f:(r,p)=>{const v=r.lte||'LTE';return {s:v===p.v,t:esc(v)+(r.lteSrc==='bundle'||r.lteSrc==='country'?'':' '+T('dflt'))}}},
 
  {g:'g_apple',id:'ft',label:{ru:'FaceTime/iMessage: международный номер активации',en:'FaceTime/iMessage: international activation number'},hint:{ru:'короткий местный номер в вашей сети не существует',en:'a short local number doesn’t exist on your network'},
   f:r=>({s:isIntl(r.reg),t:r.reg?'<span class="mono">'+esc(r.reg)+'</span>'+(r.regn>1?' '+(lang==='en'?'(+'+(r.regn-1)+' more)':'(и ещё '+(r.regn-1)+')'):''):T('unset')})},
 ];
 const L=o=>o?(o[lang]??o.ru):'';
+/* поля data.json, которые проверяет каждое требование — для пометки «из пакета страны» */
+const RULE_FIELDS={apnEdit:['em','hasEdit'],apnName:['inet'],inetProto:['inetp'],mms:['mmsc'],mmsEdit:['em'],ims:['ims'],evs:['evs'],volteDef:['volteDef'],volteKey:['vs'],xcap:['xcap'],vvm:['vvm','beacon'],vmpilot:['vmpilot'],epdg:['ra'],imsProto:['imsp'],ent:['wo','ce'],sec:['ipsec','auth'],iwlan:['ho','dpd','lid'],prio:['ih','ir'],wroam:['wroam'],label:['wn'],nr:['sw5g','auto5g','en5g'],sa:['sa','saDef'],vonr:['vonr'],badge:['lte'],ft:['reg','regn']};
 const opts=o=>typeof o==='function'?o():o;
 const PARAM_FALLBACK={apnName:{v:'internet'},inetProto:{set:['v46']},mms:{v:'empty'},imsProto:{set:['v46']},sec:{v:'v2'},iwlan:{set:['ho','dpd','lid']},prio:{v:'any'},badge:{v:'4G'}};
 
@@ -467,6 +471,7 @@ function render(){
     cols.map(r=>'<th><span class="l">'+esc(L(r.label))+'</span><span class="m '+state[r.id].m+'">'+T('mode_'+state[r.id].m)+'</span></th>').join('')+'<th>'+T('th_why')+'</th></tr>';
   const rows=DATA.map(r=>{let bad=0,warn=0;const cells={},why=[],soft=[];
     for(const R of RULES){const st=state[R.id];const v=R.f(r,st.p);let cls='';
+      if(r.cf&&(RULE_FIELDS[R.id]||[]).some(k=>r.cf.includes(k)))v.t+='<span class="ctag" title="'+esc(T('ctag_h'))+'">('+esc(r.country)+')</span>';
       if(v.s===null)cls='na';else if(st.m==='off')cls='';else if(v.s)cls='ok';
       else if(st.m==='req'){cls='bad';bad++;why.push(L(R.label))}else{cls='warn';warn++;soft.push(L(R.label))}
       cells[R.id]={cls,t:v.t}}
@@ -482,7 +487,7 @@ function render(){
     if(q&&!(x.r.b+' '+x.r.sims.join(' ')).toLowerCase().includes(q))continue;
     n++;
     const sc=(x.bad?'<i class="r">'+x.bad+' ✕</i>':'')+(x.warn?'<i class="p">'+x.warn+' !</i>':'')+(!x.bad&&!x.warn?'<i class="g">✓</i>':'');
-    out.push('<tr class="'+(x.bad===0?'pass':'')+'"><td class="name">'+esc(x.r.b)+'<span class="sims">'+esc(x.r.sims.join(' '))+'</span></td><td><span class="score">'+sc+'</span></td>'+
+    out.push('<tr class="'+(x.bad===0?'pass':'')+'"><td class="name">'+esc(x.r.b)+'<span class="sims">'+esc(x.r.sims.join(' '))+'</span>'+(x.r.cf&&x.r.cf.length?'<span class="cty" title="'+esc(T('ctag_h'))+'">'+esc(T('cty'))+': '+esc(x.r.country)+'</span>':'')+'</td><td><span class="score">'+sc+'</span></td>'+
       cols.map(R=>'<td class="'+x.cells[R.id].cls+'">'+x.cells[R.id].t+'</td>').join('')+
       '<td class="why">'+(x.why.length?x.why.map(w=>'<b>'+esc(w)+'</b>').join(', '):T('ok_all'))+(x.soft.length?'; <em>'+x.soft.map(esc).join(', ')+'</em>':'')+'</td></tr>');
   }

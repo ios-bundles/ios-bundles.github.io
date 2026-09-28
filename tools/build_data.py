@@ -1,25 +1,31 @@
 #!/usr/bin/env python3
 """Сборка data.json из распакованных пакетов оператора iOS.
 
-usage: build_data.py <bundles_dir> <ios> <build> <device_id> <device_name> [override_suffix] > data.json
-  напр.: build_data.py bundles 27.0 24A437 iPhone18,3 'iPhone 17' V53_V54_V57 > data.json
+usage: build_data.py <bundles_dir> <ios> <build> <device_id> <device_name> [override_suffix] [country_bundles_dir] > data.json
+  напр.: build_data.py bundles 27.0 24A437 iPhone18,3 'iPhone 17' V53_V54_V57 CountryBundles > data.json
 
-Для каждого <name>.bundle читаются carrier.plist и overrides_<suffix>.plist
-(override для конкретной платы) и сливаются глубоко: override поверх carrier.
-Ключи, которых нет в пакете, берутся из Default.bundle (так же сливаемого),
-а если нет и там — значение по умолчанию из CommCenter (см. CODE_DEFAULTS).
+Как собираются настройки пакета:
+  1. carrier.plist, поверх него глубоко — overrides_<suffix>.plist (override платы);
+  2. поверх — страновой пакет (CountryBundles/<Страна>.bundle, тоже carrier.plist +
+     override) той страны, чей MCC стоит в SupportedSIMs пакета (257 → Belarus,
+     250 → Russia …): его значения перекрывают значения пакета оператора;
+  3. ключи, которых нет нигде, — из Default.bundle, затем значение по умолчанию
+     CommCenter (CODE_DEFAULTS).
 """
 import datetime, glob, json, os, plistlib, sys
 
 bdir, ios, build, dev_id = sys.argv[1:5]
 dev_name = sys.argv[5] if len(sys.argv) > 5 else dev_id
 suffix = sys.argv[6] if len(sys.argv) > 6 else 'V53_V54_V57'
+cdir = sys.argv[7] if len(sys.argv) > 7 else None
 
 # Значения по умолчанию, зашитые в CommCenter (iOS 27.0), для ключей,
 # которых нет ни в пакете, ни в Default.bundle.
 CODE_DEFAULTS = {
     'Show5GSwitch': True,          # проверка «5G switch is supported» читает ключ с default = true
 }
+# служебные ключи странового пакета, которые не относятся к настройкам
+COUNTRY_META = {'CountryName', 'ISOAlpha2CountryCode', 'SupportedCountryIds'}
 
 
 def read_plist(path):
@@ -67,6 +73,19 @@ def plain(v):
 
 DEFAULT = bundle_dict(os.path.join(bdir, 'Default.bundle'))
 
+# MCC → (название страны, настройки странового пакета)
+COUNTRY_BY_MCC = {}
+if cdir:
+    for p in glob.glob(os.path.join(cdir, '*.bundle')):
+        cd = bundle_dict(p)
+        name = str(cd.get('CountryName') or os.path.basename(p)[:-7])
+        settings = {k: v for k, v in cd.items() if k not in COUNTRY_META}
+        for mcc in (cd.get('SupportedCountryIds') or []):
+            mcc = str(mcc)
+            if mcc.isdigit():
+                COUNTRY_BY_MCC[mcc] = (name, settings)
+
+
 def inherit(d, key):
     """(значение, источник): 'bundle' | 'default' (Default.bundle) | 'code' (CommCenter) | None."""
     if key in d:
@@ -78,12 +97,7 @@ def inherit(d, key):
     return None, None
 
 
-out = []
-for p in sorted(glob.glob(os.path.join(bdir, '*.bundle')), key=str.lower):
-    b = os.path.basename(p)[:-7]
-    if b == 'Default':
-        continue
-    d = bundle_dict(p)
+def extract(b, d):
     ims = d.get('IMSConfig') if isinstance(d.get('IMSConfig'), dict) else {}
     ac = g(ims, 'Media', 'AudioCodecs') or {}
     codecs = [c.get('EncodingName') for c in ac.values() if isinstance(c, dict)] if isinstance(ac, dict) else []
@@ -110,7 +124,7 @@ for p in sorted(glob.glob(os.path.join(bdir, '*.bundle')), key=str.lower):
     lteSrc = 'bundle' if lte else None
     if not lte:
         lte, lteSrc = inherit(d, 'DataIndicatorOverrideForLTE')
-    out.append(dict(
+    return dict(
         b=b, sims=[str(x) for x in (d.get('SupportedSIMs') or [])][:4],
         inet=str((inet[0].get('apn') or '')) if inet else '', inetp=inet[0].get('AllowedProtocolMask') if inet else None,
         em=em, hasEdit=bool(e),
@@ -134,8 +148,30 @@ for p in sorted(glob.glob(os.path.join(bdir, '*.bundle')), key=str.lower):
         mmsc=str(mms.get('MMSC') or ''), mmsapn=str((mmsa[0].get('apn') or '')) if mmsa else '',
         lte=lte or '', lteSrc=lteSrc,
         xcap=plain(g(ims, 'XCAP', 'supported')), vmpilot=str(d.get('VoicemailPilotNumber') or ''),
-    ))
+    )
+
+
+out = []
+for p in sorted(glob.glob(os.path.join(bdir, '*.bundle')), key=str.lower):
+    b = os.path.basename(p)[:-7]
+    if b == 'Default':
+        continue
+    d = bundle_dict(p)
+    rec = extract(b, d)
+    sims = [str(x) for x in (d.get('SupportedSIMs') or [])]
+    country = COUNTRY_BY_MCC.get(sims[0][:3]) if sims else None
+    if country:
+        name, settings = country
+        rec_c = extract(b, deep_merge(d, settings))
+        changed = [k for k in rec_c if k not in ('b', 'sims') and not k.endswith('Src') and rec_c[k] != rec[k]]
+        for k in ('sw5g', 'vs', 'lte'):
+            if k in changed:
+                rec_c[k + 'Src'] = 'country'
+        rec = rec_c
+        rec['country'] = name
+        rec['cf'] = changed          # поля, перекрытые страновым пакетом
+    out.append(rec)
 
 meta = dict(ios=ios, build=build, device=dev_id, deviceName=dev_name, overrides=suffix,
-            count=len(out), generated=datetime.date.today().isoformat())
+            countryBundles=bool(cdir), count=len(out), generated=datetime.date.today().isoformat())
 json.dump(dict(meta=meta, bundles=out), sys.stdout, ensure_ascii=False, separators=(',', ':'))
