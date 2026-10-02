@@ -97,6 +97,22 @@ def inherit(d, key):
     return None, None
 
 
+IKE_FIELDS = (('enc', 'EncryptionAlgorithm'), ('int', 'IntegrityAlgorithm'), ('prf', 'PRFAlgorithm'), ('dh', 'DHGroup'))
+
+
+def ike_proposals(d):
+    """(предложения IKE SA, источник): TechSettings.IKE.Proposals пакета, иначе Default.bundle.
+
+    ePDG отвечает NO_PROPOSAL_CHOSEN, если ни одно предложение iPhone ему не подходит,
+    поэтому пакеты сравниваются по пересечению предложений, а не по одному полю.
+    """
+    for src, o in (('bundle', d), ('default', DEFAULT)):
+        v = g(o, 'TechSettings', 'IKE', 'Proposals')
+        if isinstance(v, list):
+            return [{k: plain(p.get(key)) for k, key in IKE_FIELDS} for p in v if isinstance(p, dict)], src
+    return None, None
+
+
 def extract(b, d):
     ims = d.get('IMSConfig') if isinstance(d.get('IMSConfig'), dict) else {}
     ac = g(ims, 'Media', 'AudioCodecs') or {}
@@ -120,6 +136,7 @@ def extract(b, d):
     vm = d.get('com.apple.voicemail.imap') if isinstance(d.get('com.apple.voicemail.imap'), dict) else {}
     sw5g, sw5gSrc = inherit(d, 'Show5GSwitch')
     vs, vsSrc = inherit(d, 'ShowVolteSwitch')
+    ikep, ikeSrc = ike_proposals(d)
     lte = plain(d.get('DataIndicatorOverrideForLTE') or d.get('DataIndicatorOverride'))
     lteSrc = 'bundle' if lte else None
     if not lte:
@@ -138,6 +155,7 @@ def extract(b, d):
         wo=plain(d.get('EnableWiFiCallingWithoutEntitlement', ims.get('EnableWiFiCallingWithoutEntitlement'))),
         ce=ce if isinstance(ce, int) else None,
         ipsec=plain(g(ims, 'Signaling', 'UseIPSec')), auth=plain(g(ims, 'Signaling', 'DefaultAuthAlgorithm')),
+        ike=ikep, ikeSrc=ikeSrc,
         ho=plain(ts.get('SupportCallHandover')), dpd=plain(ike.get('DeadPeerDetectionEnabled')), lid=bool(ike.get('LocalIdentifier')),
         ih=str(ir.get('PreferredTechnology') or '').lower(),
         ir=str(ir.get('PreferredTechnologyRoaming') or ir.get('PreferredTechnologyInRoaming') or '').lower(),
@@ -164,7 +182,7 @@ for p in sorted(glob.glob(os.path.join(bdir, '*.bundle')), key=str.lower):
         name, settings = country
         rec_c = extract(b, deep_merge(d, settings))
         changed = [k for k in rec_c if k not in ('b', 'sims') and not k.endswith('Src') and rec_c[k] != rec[k]]
-        for k in ('sw5g', 'vs', 'lte'):
+        for k in ('sw5g', 'vs', 'lte', 'ike'):
             if k in changed:
                 rec_c[k + 'Src'] = 'country'
         rec = rec_c
